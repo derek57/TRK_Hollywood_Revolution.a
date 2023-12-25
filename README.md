@@ -54,7 +54,7 @@ visible as "#if" definitions. Aside from that, libOGC itself needs modifications
 and it will also require a modified linker script, GNU plugins for CodeWarrior
 and specific CodeWarrior project data.
 
-# Test results
+## Test results
 
 Tests were successful to the point, that the code within here works the way it
 should when compiling and linking it using the command-line tools of CodeWarrior
