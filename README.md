@@ -14,7 +14,7 @@ extracted, cover dates from the years between 1999 and 2006. The older library
 code was harder to decompile due to the fact that (most likely) multiple compiler
 releases were used to compile different parts of the library code but at the same
 time, most of the older library code is included here as well but disabled. At
-thesame time it is very unlikely that the v0.1 source code would ever run with
+the same time it is very unlikely that the v0.1 source code would ever run with
 success.
 
 ## Build / Clean-up instructions
