@@ -36,8 +36,8 @@ They all cover different versions of the source code whereby two versions are of
 use within every single repository: "Kernel version" vs. "Protocol version".
 
 "Kernel version" most likely represents the modified code of the original source
-"Protocol version" represents the source code of the API back in the day before
-changes were applied to make things run on different hardware / MCU's.
+while "Protocol version" represents the source code of the API back in the day
+before changes were applied to make things run on different hardware / MCU's.
 
 For this particular library right here, "Protocol version" was v1.10 which
 during development turned into "Kernel version" v0.4 in the end.
