@@ -54,12 +54,9 @@ STATUS
 #include "memmap.h"
 #include "mem_TRK.h"
 #include "flush_cache.h"
-#include "targsupp.h"
 #include "rvl_mem.h"
 #include "asm_regs.h"
 #include "trkstring.h"
-#include "cc_ddh.h"
-#include "cc_gdev.h"
 #include "serpoll.h"
 
 #if defined(HAVE_RVL_SDK) && !defined(__GNUC__)
@@ -114,6 +111,11 @@ ProcessorState_PPC     gTRKCPUState;
 ** debugger.
 */
 
+/****************************************************************************/
+/*
+ *    100 % DONE - Corrected initializer
+ */
+/****************************************************************************/
 ProcessorRestoreFlags_PPC gTRKRestoreFlags =
 {
     FALSE,
@@ -144,6 +146,12 @@ typedef struct
     ExceptionInfo_PPC    exceptionInfo;
     u8                   inTRK;
     u8                   exceptionDetected;
+
+    //
+    // Added to get around the compiler warning about padding
+    //
+    // The MetroWerks C-Compiler would still add 2 bytes of padding here
+    //
     u8                   pad[2];
 } ExceptionStatus;
 
@@ -154,7 +162,7 @@ typedef struct
 /****************************************************************************/
 #if defined(__MWERKS__)
 static ExceptionStatus gTRKExceptionStatus =
-#elif defined(__GNUC__) // externally used
+#elif defined(__GNUC__) // externally used by GCC
 ExceptionStatus gTRKExceptionStatus =
 #endif
 {
@@ -176,7 +184,13 @@ typedef struct
     u32 count;
     u32 rangeStart;
     u32 rangeEnd;
-    u8 linker_padding[4];
+
+    //
+    // Added to get around the compiler warning about padding
+    //
+    // The MetroWerks C-Compiler would still add 4 bytes of padding here
+    //
+    u8 pad[4];
 } PpcStepStatus;
 
 /****************************************************************************/
@@ -1285,10 +1299,10 @@ DSError TRKTargetAccessExtended2(u32 firstRegister, u32 lastRegister,
     savedException = gTRKExceptionStatus;
     gTRKExceptionStatus.exceptionDetected = FALSE;
 
-    TRKPPCAccessSPR((void *)value32, SPR_DCVL, TRUE);
+    TRKPPCAccessSPR((void *)value32, SPR_HID2, TRUE);
 
     value32[0] |= 0xA0000000;
-    TRKPPCAccessSPR((void *)value32, SPR_DCVL, FALSE);
+    TRKPPCAccessSPR((void *)value32, SPR_HID2, FALSE);
 
     value32[0] = 0;
     TRKPPCAccessSPR((void *)value32, SPR_GQR0, FALSE);
@@ -1460,7 +1474,7 @@ DSError TRKTargetCheckException(void)
 
 #if defined(__MWERKS__)
     static u16 TRK_saved_exceptionID = 0;
-#elif defined(__GNUC__) // externally used
+#elif defined(__GNUC__) // externally used by GCC
     u16 TRK_saved_exceptionID = 0;
 #endif
 
@@ -2149,11 +2163,11 @@ DSError TRKTargetInterrupt(NubEvent *event)
 /****************************************************************************/
 
 
-#define CURRENT_CONTEXT_ADDR        0xD4
-#define FPU_CONTEXT_ADDR            0xD8
-#define ACTIVE_THREAD_ADDR          0xDC
-#define LAST_CREATED_THREAD_ADDR    0xE0
-#define CURRENT_THREAD_ADDR         0xE4
+#define CURRENT_CONTEXT_ADDR    0xD4
+#define FPU_CONTEXT_ADDR        0xD8
+#define ROOT_THREAD_ADDR        0xDC    // First thread we were running in
+#define PREVIOUS_THREAD_ADDR    0xE0    // Previous thread we were running in
+#define CURRENT_THREAD_ADDR     0xE4    // Thread we're curently running in
 
 
 DSError TRKTargetAddStopInfo(MessageBuffer *buffer)
@@ -2191,7 +2205,7 @@ DSError TRKTargetAddStopInfo(MessageBuffer *buffer)
     {
         s32 i;
 
-        for (i = 0; i < 32; ++i)
+        for (i = 0; i < 32; i++)
             MessageAdd_ui32(buffer, gTRKCPUState.Default.GPR[i]);
 
         MessageAdd_ui32(buffer, gTRKCPUState.Default.PC);
@@ -2212,10 +2226,10 @@ DSError TRKTargetAddStopInfo(MessageBuffer *buffer)
         address[1] = DSFetch_u32(ConvertAddress(FPU_CONTEXT_ADDR));
         MessageAdd_ui32(buffer, address[1]);
 
-        address[2] = DSFetch_u32(ConvertAddress(ACTIVE_THREAD_ADDR));
+        address[2] = DSFetch_u32(ConvertAddress(ROOT_THREAD_ADDR));
         MessageAdd_ui32(buffer, address[2]);
 
-        address[3] = DSFetch_u32(ConvertAddress(LAST_CREATED_THREAD_ADDR));
+        address[3] = DSFetch_u32(ConvertAddress(PREVIOUS_THREAD_ADDR));
         MessageAdd_ui32(buffer, address[3]);
 
         address[4] = DSFetch_u32(ConvertAddress(CURRENT_THREAD_ADDR));
@@ -3268,7 +3282,7 @@ DSError TRKPPCAccessFPRegister(void *value, u32 register_num, BOOL read)
             DSFetch_u32(value) = (u32)DSFetch_u64(value);
         }
 
-        err = TRKPPCAccessSPR(value, SPR_FPECR, read);
+        err = TRKPPCAccessSPR(value, SPR_THRM3, read);
 
         if (read)
         {
@@ -3423,8 +3437,8 @@ u32 ConvertAddress(u32 address)
 /****************************************************************************/
 
 
-#define ACTIVE_THREAD   (BOOTINFO + ACTIVE_THREAD_ADDR)     // 8 bytes
-#define CURRENT_THREAD  (BOOTINFO + CURRENT_THREAD_ADDR)    // 4 bytes
+#define ACTIVE_THREAD_QUEUE (BOOTINFO + ROOT_THREAD_ADDR)       // 8 bytes
+#define CURRENT_THREAD      (BOOTINFO + CURRENT_THREAD_ADDR)    // 4 bytes
 
 
 #if defined(HAVE_RVL_SDK) && !defined(__GNUC__)
@@ -3436,7 +3450,7 @@ static void GetThreadInfo(u32 *result, u32 *a2)
 
     *result = 1;
     *a2 = 0;
-    current = (OSThread *)DSFetch_u32(ACTIVE_THREAD);
+    current = (OSThread *)DSFetch_u32(ACTIVE_THREAD_QUEUE);
 
     if (!(((u32)(&current->context.gpr[0]) != 0xFFFFFFFF) &&
         ((u32)(&current->context.gpr[0])) &&
@@ -3451,7 +3465,7 @@ static void GetThreadInfo(u32 *result, u32 *a2)
             *a2 = v3;
 
         ++v3;
-        current = (OSThread *)((u32)(current->linkActive.next) | BOOTINFO);
+        current = (OSThread *)ConvertAddress((u32)(current->linkActive.next));
 
         if (((u32)(&current->context.gpr[0]) == 0xFFFFFFFF) ||
             (!(u32)(&current->context.gpr[0])) ||
@@ -3473,11 +3487,11 @@ static void GetThreadInfo(u32 *result, u32 *a2)
 
     *result = 1;
     *a2 = 0;
-    active_thread_data = DSFetch_u32(ACTIVE_THREAD);
+    active_thread_data = DSFetch_u32(ACTIVE_THREAD_QUEUE);
 
-    if (!((DSFetch_u32(ACTIVE_THREAD) != 0xFFFFFFFF) &&
-        (DSFetch_u32(ACTIVE_THREAD)) &&
-        (DSFetch_u32(ACTIVE_THREAD) != BOOTINFO)))
+    if (!((active_thread_data != 0xFFFFFFFF) &&
+        (active_thread_data) &&
+        (active_thread_data != BOOTINFO)))
         return;
 
     v3 = 0;
@@ -3488,7 +3502,7 @@ static void GetThreadInfo(u32 *result, u32 *a2)
             *a2 = v3;
 
         ++v3;
-        active_thread_data = (DSFetch_u32((active_thread_data + 764)) | BOOTINFO);
+        active_thread_data = ConvertAddress(*(u32 *)(active_thread_data + 764));
 
         if ((active_thread_data == 0xFFFFFFFF) ||
             (!active_thread_data) ||
@@ -3501,35 +3515,47 @@ static void GetThreadInfo(u32 *result, u32 *a2)
 
 #elif defined(__GNUC__)
 
-// This very likely needs a ported version for the use with libOGC...
 static void GetThreadInfo(u32 *result, u32 *a2)
 {
     u32 v3;
-    u32 active_thread_data;
+    lwp_cntrl *thread;
+
+    // catch the running threads from libOGC
+    extern lwp_cntrl *_thr_main;        // ROOT_THREAD_ADDR
+    extern lwp_cntrl *_thr_executing;   // CURRENT_THREAD_ADDR
 
     *result = 1;
     *a2 = 0;
-    active_thread_data = DSFetch_u32(ACTIVE_THREAD);
+    thread = _thr_main;
 
-    if (!((DSFetch_u32(ACTIVE_THREAD) != 0xFFFFFFFF) &&
-        (DSFetch_u32(ACTIVE_THREAD)) &&
-        (DSFetch_u32(ACTIVE_THREAD) != BOOTINFO)))
+    if (!(((u32)thread->object.node.next != 0xFFFFFFFF) &&
+        ((u32)thread->object.node.next) &&
+        ((u32)thread->object.node.next != BOOTINFO)))
+    {
+        OSReport("return\n");
         return;
+    }
 
     v3 = 0;
 
-    while (active_thread_data != 0)
+    while ((u32)thread->object.node.next != 0)
     {
-        if (active_thread_data == DSFetch_u32(CURRENT_THREAD))
+        if (thread == _thr_executing)
+        {
+            OSReport("got data %08x\n", thread);
             *a2 = v3;
+        }
 
         ++v3;
-        active_thread_data = (DSFetch_u32((active_thread_data + 764)) | BOOTINFO);
+        thread = (lwp_cntrl *)ConvertAddress((u32)(thread->object.node.next));
 
-        if ((active_thread_data == 0xFFFFFFFF) ||
-            (!active_thread_data) ||
-            (active_thread_data == BOOTINFO))
+        if (((u32)thread->object.node.next == 0xFFFFFFFF) ||
+            (!(u32)thread->object.node.next) ||
+            ((u32)thread->object.node.next == BOOTINFO))
+        {
+            OSReport("break\n");
             break;
+        }
     }
 
     *result = v3;

@@ -60,9 +60,7 @@
 ** Define __PPC_FPU__ to 1 if the processor has an FPU.
 */
 
-#ifndef __PPC_FPU__
-    #define __PPC_FPU__                  (1) /* set to 1 if FPU present */
-#endif
+#define __PPC_FPU__                  (1) /* set to 1 if FPU present */
 
 /*
 ** Define __PPC_FPU_FPECR__ to 1 if the processor has the
@@ -75,15 +73,15 @@
 /*
 ** Define __PPC_DCACHE__ to 1 if the processor has a data cache.
 */
-#ifndef __PPC_DCACHE__
-    #define __PPC_DCACHE__               (1) /* set to 1 if data cache present */
-#endif
+
+#define __PPC_DCACHE__               (1) /* set to 1 if data cache present */
+
 /*
 ** Define __PPC_ICACHE__ to 1 if the processor has an instruction cache.
 */
-#ifndef __PPC_ICACHE__
-    #define __PPC_ICACHE__               (1) /* set to 1 if inst. cache present */
-#endif
+
+#define __PPC_ICACHE__               (1) /* set to 1 if inst. cache present */
+
 /*
 ** Define __PPC_BOOT_CONFIG__ to 1 if the processor gets boot
 ** configuration data from the first 0x100 bytes of ROM.
@@ -121,9 +119,8 @@
 ** a reserved bit.  It is not safe if bit 14 of the MSR implements
 ** some function other than TGPR.
 */
-#ifndef __PPC_TGPR__
-    #define __PPC_TGPR__                 (1)
-#endif
+
+#define __PPC_TGPR__                 (1)
 
 
 #endif // __PROC_MPC_7XX_603E_H__

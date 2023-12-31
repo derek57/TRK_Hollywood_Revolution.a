@@ -84,37 +84,6 @@ void TRK_HandleRequestEvent(NubEvent *event)
 #endif
 
     TRK_DispatchMessage(buffer);
-
-#if TRK_MSG_SEQUENCE_IDS
-    /*
-    ** If this was a cached request, it has been handled now, so clear the flag.
-    */
-    gRequestCached = FALSE;
-
-    /*
-    ** If the buffer was reused to form the reply, it will be saved in
-    ** a global previous-ACK location (gPreviousAckId).  Disassociate it from
-    ** the event so it won't be discarded with the event, but keep a
-    ** local backup of the ID (discardPendingId).  Once it is no longer
-    ** referenced from the gPreviousAck variable it can be discarded.
-    */
-    if (discardPendingId != kInvalidMessageBufferId)
-    {
-        discardPending = TRKGetBuffer(discardPendingId);
-
-        if (gPreviousAck != discardPending)
-        {
-            TRK_ReleaseBuffer(discardPendingId);
-            discardPendingId = kInvalidMessageBufferId;
-        }
-    }
-
-    if (gPreviousAck == buffer)
-    {
-        discardPendingId = event->fMessageBufferId;
-        event->fMessageBufferId = kInvalidMessageBufferId;
-    }
-#endif
 }
 
 /******************************************************************************/
@@ -208,7 +177,7 @@ void TRK_NubMainLoop(void)
                     break;
 
                 case kRequestEvent:
-                    TRK_DispatchMessage(TRKGetBuffer(event.fMessageBufferId));
+                    TRK_HandleRequestEvent(&event);
                     break;
 
                 case kShutdownEvent:
@@ -221,7 +190,7 @@ void TRK_NubMainLoop(void)
                     break;
 
                 case kSupportEvent:
-                    TRKTargetSupportRequest();
+                    TRKHandleSupportEvent(&event);
                     break;
 
                 default:
@@ -261,9 +230,7 @@ void TRK_NubMainLoop(void)
                 ** state and continue with the loop.
                 */
 
-                if (TRKTargetStopped() == FALSE)
-                    TRKTargetContinue();
-
+                TRK_Idle();
                 isIdle = FALSE;
             }
         }

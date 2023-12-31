@@ -34,14 +34,12 @@ typedef FloatType FPType;    /* TRK core calls it FPType */
 
 typedef struct Default_PPC
 {
-                    // Table size: 128 (Default: 4 bytes (u32))
     DefaultType   GPR[32];
-    DefaultType   PC;            // starts at 128
-    DefaultType   LR;            // 132
-    DefaultType   CR;            // 136
-    DefaultType   CTR;           // 140 = "'0' of Default.XER"
-    DefaultType   XER;           // 144 = Next Table (Float)
-
+    DefaultType   PC;
+    DefaultType   LR;
+    DefaultType   CR;
+    DefaultType   CTR;
+    DefaultType   XER;
 } Default_PPC;
 
 /*
@@ -62,14 +60,10 @@ typedef struct Default_PPC
 
 typedef struct Float_PPC
 {
-                        // Table size: 256 (Float: 8 bytes (u64))
-    FloatType FPR[32];  // "FPR[0]" = Pos. 148 (byte '0')
-                        // "FPR[1]" = Pos. 156 (byte '0')
-                        // so... "FPSCR" = 256 + 156 = 412
-    FloatType FPSCR;    // 412 = first byte of "Float.FPSCR"
+    FloatType FPR[32];
+    FloatType FPSCR;
     FloatType FPECR;    /* only supported on some processors */
-
-} Float_PPC;            // 427 = last byte
+} Float_PPC;
 
 /*
 ** Register indices
@@ -98,7 +92,11 @@ typedef struct StopInfo_PPC
     InstructionType    PCInstruction;  // instruction at PC
     ExceptionCauseType exceptionID;    // same as vector #, e.g. 0x0200
 
-    // CORRECTED ALIGNMENT
+    //
+    // Added to get around the compiler warning about padding
+    //
+    // The MetroWerks C-Compiler would still add 2 bytes of padding here
+    //
     u8                 pad[2];
 } StopInfo_PPC;
 
@@ -207,10 +205,9 @@ typedef InstructionType BreakpointRestore;
 // MOVED TO ASM_REGS.H FOR COMPATIBILITY __MWERKS__ <-> __GNUC__
 //#define COND_EQ           2
 
-#ifndef MSR_DE
-    #define MSR_DE            0x0200      /* DE bit of MSR (bit 22) - only for e500 */
-#endif
-
+//
+// Added "#ifndef" checks for portability to libOGC
+//
 #ifndef MSR_SE
     #define MSR_SE            0x0400      /* SE bit of MSR (bit 21) */
 #endif

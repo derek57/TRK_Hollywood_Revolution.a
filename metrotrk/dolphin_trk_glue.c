@@ -23,6 +23,7 @@ STATUS
 
 #ifdef __GNUC__
     #include <ogc/cache.h>
+    #include <ogc/lwp_threads.h>
 #endif
 
 #include "osreport.h"
@@ -57,7 +58,7 @@ extern void PPCHalt(void);
 
     static s32 gWritePos = 0;
 #elif defined(__GNUC__)
-    s32 gWritePos = 0; // externally used
+    s32 gWritePos = 0; // externally used by GCC
 #endif
 
 
@@ -161,7 +162,7 @@ misc:
  *    100 % DONE
  */
 /****************************************************************************/
-void TRKEXICallBack(volatile u8 **inputPendingPtrRef, void *cb)
+void TRKEXICallBack(volatile u8 **inputPendingPtrRef, void *context)
 {
 #if defined(__MWERKS__)
     #pragma unused(inputPendingPtrRef)
@@ -169,15 +170,13 @@ void TRKEXICallBack(volatile u8 **inputPendingPtrRef, void *cb)
     OSEnableScheduler();
 
     // TRK_TRANSPORT_INT_KEY = "External Interrupt" exception call (0x500)
-    TRKLoadContext(cb, TRK_TRANSPORT_INT_KEY);
+    TRKLoadContext(context, TRK_TRANSPORT_INT_KEY);
 
 #elif defined(__GNUC__)
 
     UNUSED(inputPendingPtrRef);
-    UNUSED(cb);
+    UNUSED(context);
 
-    // What to do here when it comes to the usage of GCC ???
-    // libOGC uses "_cpu_context_restore"
 #endif
 }
 

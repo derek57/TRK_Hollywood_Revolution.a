@@ -27,7 +27,7 @@ COPYRIGHT
 __extern_c
 
     ASM_PREFIX void TRKLoadContext(void *, u32);
-    void TRKEXICallBack(volatile u8 **inputPendingPtrRef, void *cb);
+    void TRKEXICallBack(volatile u8 **inputPendingPtrRef, void *context);
     UARTError InitMetroTRKCommTable(s32 reply);
     void EnableEXI2Interrupts(void);
     void ReserveEXI2Port(void);

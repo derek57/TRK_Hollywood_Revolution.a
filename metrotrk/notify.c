@@ -171,9 +171,9 @@ DSError TRKDoNotifyStopped(MessageCommandID command)
          */
 
         if (command == kDSNotifyStopped)
-            TRKTargetAddStopInfo(buffer);
+            XTargetAddStopInfo(buffer);
         else
-            TRKTargetAddExceptionInfo(buffer);
+            XTargetAddExceptionInfo(buffer);
 
         /*
          *    Send the notification

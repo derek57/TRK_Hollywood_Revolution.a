@@ -295,7 +295,7 @@ void TRK_copy_vector(u32 *src_addr)
 
     TRK_memcpy(dest, (void *)((u32)&gTRKInterruptVectorTable[(u32)src_addr]), EXCEPTION_SIZE);
     TRK_flush_cache((u32)dest, EXCEPTION_SIZE);
-    
+
     return;
 }
 
@@ -363,7 +363,7 @@ void __TRK_copy_vectors(void)
 
         isr_ptr++;
     }
-    
+
     return;
 }
 

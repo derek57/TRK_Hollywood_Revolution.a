@@ -214,6 +214,8 @@ STATUS
 #define DEBUG_MSG_HANDLER_STOP          0
 #define DEBUG_MSG_HANDLER_OPTION        0
 
+#define PPC_CACHE_ALIGNMENT             32
+
 
 #if __MWERKS__
     #pragma mark  Standard ACK/NAK
@@ -791,6 +793,10 @@ DSError TRKDoReadMemory(MessageBuffer *b)
     u8           msg_options;
     u32          msg_start;
     u16          msg_length;
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+    u32          msg_process;
+    u32          msg_thread;
+#endif
 
     err = kNoError;
 
@@ -812,6 +818,14 @@ DSError TRKDoReadMemory(MessageBuffer *b)
     msg_start = DSFetch_u32(&b->fData[16]);
     msg_length = DSFetch_u16(&b->fData[12]);
 
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+    if (err == kNoError)
+        err = MessageGet_ui32(b, &msg_process);
+
+    if (err == kNoError)
+        err = MessageGet_ui32(b, &msg_thread);
+#endif
+
 #if DEBUG_MSG_HANDLER_READ_MEM
     __puts("DoReadMemory\r\n");
     __puts(" options: ");
@@ -820,6 +834,12 @@ DSError TRKDoReadMemory(MessageBuffer *b)
     __puthex4(msg_length);
     __puts("\r\n addr: ");
     __puthex8(msg_start);
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+    __puts("\r\n process: ");
+    __puthex8(msg_process);
+    __puts("\r\n thread: ");
+    __puthex8(msg_thread);
+#endif
     __puts("\r\n");
 #endif
 
@@ -861,8 +881,12 @@ DSError TRKDoReadMemory(MessageBuffer *b)
         ** Do the memory read.
         */
 
-        err = TRKTargetAccessMemory((void *)&buf, (void *)msg_start, &length,
-            (msg_options & DS_MSG_MEMORY_USERVIEW) ? kUserMemory : kDebuggerMemory, TRUE);
+        err = XTargetAccessMemory((void *)&buf, (void *)msg_start, &length,
+            (msg_options & DS_MSG_MEMORY_USERVIEW) ? kUserMemory : kDebuggerMemory, TRUE
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+            , msg_process, msg_thread
+#endif
+            );
 
         TRKResetBuffer(b, kZero);
 
@@ -964,6 +988,10 @@ DSError TRKDoWriteMemory(MessageBuffer *b)
     u8           msg_options;
     u32          msg_start;
     u16          msg_length;
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+    u32          msg_process;
+    u32          msg_thread;
+#endif
 
     err = kNoError;
 
@@ -985,6 +1013,14 @@ DSError TRKDoWriteMemory(MessageBuffer *b)
     msg_start = DSFetch_u32(&b->fData[16]);
     msg_length = DSFetch_u16(&b->fData[12]);
 
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+    if (err == kNoError)
+        err = MessageGet_ui32(b, &msg_process);
+
+    if (err == kNoError)
+        err = MessageGet_ui32(b, &msg_thread);
+#endif
+
 #if DEBUG_MSG_HANDLER_WRITE_MEM
     __puts("DoWriteMemory\r\n");
     __puts(" options: ");
@@ -993,6 +1029,12 @@ DSError TRKDoWriteMemory(MessageBuffer *b)
     __puthex4(msg_length);
     __puts("\r\n addr: ");
     __puthex8(msg_start);
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+    __puts("\r\n process: ");
+    __puthex8(msg_process);
+    __puts("\r\n thread: ");
+    __puthex8(msg_thread);
+#endif
     __puts("\r\n");
 #endif
 
@@ -1037,8 +1079,12 @@ DSError TRKDoWriteMemory(MessageBuffer *b)
 
         MessageGetBlock(b, (void *)&buf, length);
 
-        err = TRKTargetAccessMemory((void *)&buf, (void *)msg_start, &length,
-            (msg_options & DS_MSG_MEMORY_USERVIEW) ? kUserMemory : kDebuggerMemory, FALSE);
+        err = XTargetAccessMemory((void *)&buf, (void *)msg_start, &length,
+            (msg_options & DS_MSG_MEMORY_USERVIEW) ? kUserMemory : kDebuggerMemory, FALSE
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+            , msg_process, msg_thread
+#endif
+            );
 
         /*
         ** Reuse buffer to write the reply.
@@ -1129,6 +1175,10 @@ DSError TRKDoReadRegisters(MessageBuffer *b)
     DSReplyError msg_reply;
     u16          msg_lastRegister;
     u16          msg_firstRegister;
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+    u32          msg_process;
+    u32          msg_thread;
+#endif
 
 #if DEBUG_MSG_HANDLER_READ_REG
     /* check received message size */
@@ -1147,15 +1197,33 @@ DSError TRKDoReadRegisters(MessageBuffer *b)
     msg_lastRegister = DSFetch_u16(&b->fData[12]);
     msg_firstRegister = DSFetch_u16(&b->fData[16]);
 
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+    if (err == kNoError)
+        err = MessageGet_ui32(b, &msg_process);
+
+    if (err == kNoError)
+        err = MessageGet_ui32(b, &msg_thread);
+#endif
+
 #if DEBUG_MSG_HANDLER_READ_REG
     __puts("\r\nDoReadRegisters\r\n");
     __puts("\r\n firstRegister: ");
     __puthex4(msg_firstRegister);
     __puts("\r\n lastRegister: ");
     __puthex4(msg_lastRegister);
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+    __puts("\r\n process: ");
+    __puthex8(msg_process);
+    __puts("\r\n thread: ");
+    __puthex8(msg_thread);
+#endif
     __puts("\r\n");
 
-    if (!TRKTargetStopped())
+    if (!XTargetStopped(
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+        msg_process, msg_thread
+#endif
+        ))
     {
         __puts("Target is not stopped\r\n");
 
@@ -1195,16 +1263,32 @@ DSError TRKDoReadRegisters(MessageBuffer *b)
          *    read registers; write into the message buffer
          */
 
-        err = TRKTargetAccessDefault(0, 0x24, b, &registerDataLength, TRUE);
+        err = XTargetAccessDefault(0, 0x24, b, &registerDataLength, TRUE
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+            , msg_process, msg_thread
+#endif
+            );
 
         if (err == kNoError)
-            err = TRKTargetAccessFP(0, 0x21, b, &registerDataLength, TRUE);
+            err = XTargetAccessFP(0, 0x21, b, &registerDataLength, TRUE
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+                , msg_process, msg_thread
+#endif
+                );
 
         if (err == kNoError)
-            err = TRKTargetAccessExtended1(0, 0x60, b, &registerDataLength, TRUE);
+            err = XTargetAccessExtended1(0, 0x60, b, &registerDataLength, TRUE
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+                , msg_process, msg_thread
+#endif
+                );
 
         if (err == kNoError)
-            err = TRKTargetAccessExtended2(0, 0x1f, b, &registerDataLength, TRUE);
+            err = XTargetAccessExtended2(0, 0x1f, b, &registerDataLength, TRUE
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+                , msg_process, msg_thread
+#endif
+                );
 
         if (err != kNoError)
         {
@@ -1278,6 +1362,10 @@ DSError TRKDoWriteRegisters(MessageBuffer *b)
     u8           msg_options;
     u16          msg_lastRegister;
     u16          msg_firstRegister;
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+    u32          msg_process;
+    u32          msg_thread;
+#endif
 
 #if DEBUG_MSG_HANDLER_WRITE_REG
     /* check received message size */
@@ -1297,6 +1385,14 @@ DSError TRKDoWriteRegisters(MessageBuffer *b)
     msg_lastRegister = DSFetch_u16(&b->fData[12]);
     msg_firstRegister = DSFetch_u16(&b->fData[16]);
 
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+    if (err == kNoError)
+        err = MessageGet_ui32(b, &msg_process);
+
+    if (err == kNoError)
+        err = MessageGet_ui32(b, &msg_thread);
+#endif
+
     TRK_SetBufferPosition(b, kZero);
 
 #if DEBUG_MSG_HANDLER_WRITE_REG
@@ -1307,9 +1403,19 @@ DSError TRKDoWriteRegisters(MessageBuffer *b)
     __puthex4(msg_firstRegister);
     __puts("\r\n lastRegister: ");
     __puthex4(msg_lastRegister);
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+    __puts("\r\n process: ");
+    __puthex8(msg_process);
+    __puts("\r\n thread: ");
+    __puthex8(msg_thread);
+#endif
     __puts("\r\n");
 
-    if (!TRKTargetStopped())
+    if (!XTargetStopped(
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+        msg_process, msg_thread
+#endif
+        ))
     {
         __puts("Target is not stopped\r\n");
 
@@ -1338,19 +1444,35 @@ DSError TRKDoWriteRegisters(MessageBuffer *b)
     switch (msg_options)
     {
         case kDSRegistersDefault:
-            err = TRKTargetAccessDefault(msg_lastRegister, msg_firstRegister, b, &registerDataLength, FALSE);
+            err = XTargetAccessDefault(msg_lastRegister, msg_firstRegister, b, &registerDataLength, FALSE
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+                , msg_process, msg_thread
+#endif
+                );
             break;
 
         case kDSRegistersFP:
-            err = TRKTargetAccessFP(msg_lastRegister, msg_firstRegister, b, &registerDataLength, FALSE);
+            err = XTargetAccessFP(msg_lastRegister, msg_firstRegister, b, &registerDataLength, FALSE
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+                , msg_process, msg_thread
+#endif
+                );
             break;
 
         case kDSRegistersExtended1:
-            err = TRKTargetAccessExtended1(msg_lastRegister, msg_firstRegister, b, &registerDataLength, FALSE);
+            err = XTargetAccessExtended1(msg_lastRegister, msg_firstRegister, b, &registerDataLength, FALSE
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+                , msg_process, msg_thread
+#endif
+                );
             break;
 
         case kDSRegistersExtended2:
-            err = TRKTargetAccessExtended2(msg_lastRegister, msg_firstRegister, b, &registerDataLength, FALSE);
+            err = XTargetAccessExtended2(msg_lastRegister, msg_firstRegister, b, &registerDataLength, FALSE
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+                , msg_process, msg_thread
+#endif
+                );
             break;
 
         default:
@@ -1575,12 +1697,42 @@ DSError TRKDoFlushCache(MessageBuffer *b)
 DSError TRKDoContinue(MessageBuffer *b)
 {
     DSError err;
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+    u8      msg_command;
+    u32     msg_process;
+    u32     msg_thread;
+
+    err = kNoError;
+
+    TRK_SetBufferPosition(b, kZero);
+
+    if (err == kNoError)
+        err = MessageGet_ui8(b, &msg_command);
+
+    if (err == kNoError)
+        err = MessageGet_ui32(b, &msg_process);
+
+    if (err == kNoError)
+        err = MessageGet_ui32(b, &msg_thread);
+#endif
 
 #if DEBUG_MSG_HANDLER_CONTINUE
     OSReport("DoContinue\n");
 #endif
 
-    if (!TRKTargetStopped())
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+    __puts("\r\n process: ");
+    __puthex8(msg_process);
+    __puts("\r\n thread: ");
+    __puthex8(msg_thread);
+    __puts("\r\n");
+#endif
+
+    if (!XTargetStopped(
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+        msg_process, msg_thread
+#endif
+        ))
     {
 #if DEBUG_MSG_HANDLER_CONTINUE
         OSReport("Target is not stopped\n");
@@ -1597,7 +1749,11 @@ DSError TRKDoContinue(MessageBuffer *b)
         __do_console_dump();
 #endif
 
-        err = TRKTargetContinue();
+        err = XTargetContinue(
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+            msg_process, msg_thread
+#endif
+            );
 
 #if defined(DEBUGIO_RAM) && defined(DB_RAM_CONSOLE_DUMP) && defined(DEBUG_MSG_HANDLER_CONTINUE)
         __do_console_dump();
@@ -1620,6 +1776,10 @@ DSError TRKDoStep(MessageBuffer *b)
     u8      msg_count;
     u32     msg_rangeStart;
     u32     msg_rangeEnd;
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+    u32     msg_process;
+    u32     msg_thread;
+#endif
     PCType  target_pc;
 
     DSError err = kNoError;
@@ -1663,6 +1823,39 @@ DSError TRKDoStep(MessageBuffer *b)
             __puthex2(msg_count);
 #endif
 
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+            if (err == kNoError)
+                err = MessageGet_ui32(b, &msg_process);
+
+            if (err == kNoError)
+                err = MessageGet_ui32(b, &msg_thread);
+
+            __puts("\r\n process: ");
+            __puthex8(msg_process);
+            __puts("\r\n thread: ");
+            __puthex8(msg_thread);
+
+            if (err == kNoError)
+            {
+                err = OsTargetValidStep(msg_process, msg_thread);
+
+                switch (err)
+                {
+                    case kInvalidThreadId:
+                        return TRKStandardACK(b, kDSReplyACK, kDSReplyInvalidThreadId);
+                        break;
+
+                    case kInvalidProcessId:
+                        return TRKStandardACK(b, kDSReplyACK, kDSReplyInvalidProcessId);
+                        break;
+
+                    case kOsError:
+                        return TRKStandardACK(b, kDSReplyACK, kDSReplyOsError);
+                        break;
+                }
+            }
+#endif
+
             /*
             ** Must step over at least one instruction.
             */
@@ -1688,6 +1881,40 @@ DSError TRKDoStep(MessageBuffer *b)
             __puts("\r\n rangeEnd: ");
             __puthex8(msg_rangeEnd);
 #endif
+
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+            if (err == kNoError)
+                err = MessageGet_ui32(b, &msg_process);
+
+            if (err == kNoError)
+                err = MessageGet_ui32(b, &msg_thread);
+
+            __puts("\r\n process: ");
+            __puthex8(msg_process);
+            __puts("\r\n thread: ");
+            __puthex8(msg_thread);
+
+            if (err == kNoError)
+            {
+                err = OsTargetValidStep(msg_process, msg_thread);
+
+                switch (err)
+                {
+                    case kInvalidThreadId:
+                        return TRKStandardACK(b, kDSReplyACK, kDSReplyInvalidThreadId);
+                        break;
+
+                    case kInvalidProcessId:
+                        return TRKStandardACK(b, kDSReplyACK, kDSReplyInvalidProcessId);
+                        break;
+
+                    case kOsError:
+                        return TRKStandardACK(b, kDSReplyACK, kDSReplyOsError);
+                        break;
+                }
+            }
+#endif
+
             /*
             ** If the PC is not within the specified range already,
             ** then the step does not make sense.
@@ -1697,7 +1924,11 @@ DSError TRKDoStep(MessageBuffer *b)
             ** (ui32) conversion should be needed.
             */
 
-            target_pc = TRKTargetGetPC();
+            target_pc = XTargetGetPC(
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+                msg_process, msg_thread
+#endif
+                );
 
             if ((target_pc < (PCType)msg_rangeStart) ||
                 (target_pc > (PCType)msg_rangeEnd))
@@ -1716,7 +1947,11 @@ DSError TRKDoStep(MessageBuffer *b)
      *    do some preliminary checks
      */
 
-    if (TRKTargetStopped() == kDSReplyNoError)
+    if (!XTargetStopped(
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+        msg_process, msg_thread
+#endif
+        ))
     {
 #if DEBUG_MSG_HANDLER_STEP
         OSReport("Target is not stopped\n");
@@ -1736,7 +1971,11 @@ DSError TRKDoStep(MessageBuffer *b)
         {
             case kDSStepIntoCount:
             case kDSStepOverCount:
-                err = TRKTargetSingleStep(msg_count, (msg_options == kDSStepOverCount));
+                err = XTargetSingleStep(msg_count, (msg_options == kDSStepOverCount)
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+                    , msg_process, msg_thread
+#endif
+                    );
                 break;
 
             case kDSStepIntoRange:
@@ -1745,7 +1984,11 @@ DSError TRKDoStep(MessageBuffer *b)
                 OSReport(" rangeStart: 0x%08x\n", msg_rangeStart);
                 OSReport(" rangeEnd: 0x%08x\n", msg_rangeEnd);
 #endif
-                err = TRKTargetStepOutOfRange(msg_rangeStart, msg_rangeEnd, (msg_options == kDSStepOverRange));
+                err = XTargetStepOutOfRange(msg_rangeStart, msg_rangeEnd, (msg_options == kDSStepOverRange)
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+                    , msg_process, msg_thread
+#endif
+                    );
                 break;
         }
     }
@@ -1764,16 +2007,55 @@ DSError TRKDoStop(MessageBuffer *b)
 {
     DSError      err;
     DSReplyError replyErr;
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+    u8           msg_command;
+    u8           msg_options;
+    u32          msg_process;
+    u32          msg_thread;
+
+    err = kNoError;
+
+    TRK_SetBufferPosition(b, kZero);
+
+    if (err == kNoError)
+        err = MessageGet_ui8(b, &msg_command);
+
+    if (err == kNoError)
+        err = MessageGet_ui8(b, &msg_options);
+#endif
 
 #if DEBUG_MSG_HANDLER_STOP
     __puts("DoStop");
+#endif
+
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+    if ((err == kNoError) &&
+        ((msg_options == kDSStopProcess) || (msg_options == kDSStopThread)))
+        err = MessageGet_ui32(b, &msg_process);
+
+    if ((err == kNoError) &&
+        (msg_options == kDSStopThread))
+        err = MessageGet_ui32(b, &msg_thread);
+
+#if DEBUG_MSG_HANDLER_STOP
+    __puts("\r\n options: ");
+    __puthex2(msg_options);
+    __puts("\r\n process: ");
+    __puthex8(msg_process);
+    __puts("\r\n thread: ");
+    __puthex8(msg_thread);
+#endif
 #endif
 
 #if DEBUG_MSG_HANDLER_STOP
     __puts("\r\n");
 #endif
 
-    err = TRKTargetStop();
+    err = XTargetStop(
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+        msg_options, msg_process, msg_thread
+#endif
+        );
 
     switch (err)
     {

@@ -416,7 +416,12 @@ void __do_console_dump(void)
         }
 
         temp = current;
-        TRK_SuppAccessFile(kDSStdout, (u8 *)(*mpp + idx), (size_t *)&temp, &io_result, TRUE, FALSE);
+
+        TRK_SuppAccessFile(kDSStdout, (u8 *)(*mpp + idx), (size_t *)&temp, &io_result, TRUE, FALSE
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+            , TRK_PROCESS_ID, TRK_THREAD_ID
+#endif
+            );
     }
 
     db_ram_locked = FALSE;

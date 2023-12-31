@@ -42,7 +42,7 @@ typedef enum MemoryAccessOptions
 } MemoryAccessOptions;
 
 enum
-{                              /* DSError; see dserror.h */
+{                                   /* DSError; see dserror.h */
     kInvalidMemory = 0x0700,
     kInvalidRegister,
     kCWDSException,
@@ -82,58 +82,96 @@ __extern_c
                             MemoryAccessOptions accessOptions,
                             BOOL read);
 
+    DSError OsTargetAccessMemory(void *Data,
+                            void *virtualAddress,
+                            size_t *memorySize,
+                            MemoryAccessOptions accessOptions,
+                            BOOL read,
+                            u32 processId,
+                            u32 threadId);
+
     DSError TRKTargetAccessDefault(u32 firstRegister, u32 lastRegister,
                             MessageBuffer *b, size_t *registerStorageSize,
                             BOOL read);
 
-    DSError TargetAccessDefaultSingle(u32 reg, DefaultType *value, BOOL read);
+    DSError OsTargetAccessDefault(u32 firstRegister, u32 lastRegister,
+                            MessageBuffer *b, size_t *registerStorageSize,
+                            BOOL read,
+                            u32 processID,
+                            u32 threadID);
 
     DSError TRKTargetAccessFP(u32 firstRegister, u32 lastRegister,
                             MessageBuffer *b, size_t *registerStorageSize,
                             BOOL read);
 
-    DSError TargetAccessFPSingle(u32 reg, FPType *value, BOOL read);
+    DSError OsTargetAccessFP(u32 firstRegister, u32 lastRegister,
+                            MessageBuffer *b, size_t *registerStorageSize,
+                            BOOL read,
+                            u32 processId,
+                            u32 threadId);
 
     DSError TRKTargetAccessExtended1(u32 firstRegister, u32 lastRegister,
                             MessageBuffer *b, size_t *registerStorageSize,
                             BOOL read);
 
-    DSError TargetAccessExtended1Single(u32 reg, Extended1Type *value, BOOL read);
+    DSError OsTargetAccessExtended1(u32 firstRegister, u32 lastRegister,
+                            MessageBuffer *b, size_t *registerStorageSize,
+                            BOOL read,
+                            u32 processId,
+                            u32 threadId);
 
     DSError TRKTargetAccessExtended2(u32 firstRegister, u32 lastRegister,
                             MessageBuffer *b, size_t *registerStorageSize,
                             BOOL read);
 
+    DSError OsTargetAccessExtended2(u32 firstRegister, u32 lastRegister,
+                            MessageBuffer *b, size_t *registerStorageSize,
+                            BOOL read,
+                            u32 processId,
+                            u32 threadId);
+
+    DSError TRKTargetVersions(DSVersions *versions);
     DSError TRKTargetSupportMask(DSSupportMask *mask);
     DSError TRKTargetCPUType(DSCPUType *cpuType);
+    DSError TRKTargetCheckException(void);
 
     DSError TRKInitializeTarget(void);
-    DSError CleanupTarget(void);
 
     DSError TRKTargetContinue(void);
+    DSError OsTargetContinue(u32 processId, u32 threadId);
 
     DSError TRKTargetInterrupt(NubEvent *event);
 
     DSError TRKTargetAddStopInfo(MessageBuffer *buffer);
+    DSError OsTargetAddStopInfo(MessageBuffer *buffer);
 
     DSError TRKTargetAddExceptionInfo(MessageBuffer *buffer);
+    DSError OsTargetAddExceptionInfo(MessageBuffer *buffer);
 
     DSError TRKTargetSingleStep(u32 count, BOOL stepOver);
+    DSError OsTargetSingleStep(u32 count, BOOL stepOver,
+                            u32 processId,
+                            u32 threadId);
 
     DSError TRKTargetStepOutOfRange(u32 start, u32 end, BOOL stepOver);
+    DSError OsTargetStepOutOfRange(u32 start, u32 end,
+                            BOOL stepOver,
+                            u32 processId,
+                            u32 threadId);
 
     PCType TRKTargetGetPC(void);
+    PCType OsTargetGetPC(u32 processId, u32 threadId);
 
     DSError TRKTargetSupportRequest(void);
     DSError TRKTargetFlushCache(u8 options, void *start, void *end);
 
-    void TRKTargetSetInputPendingPtr(volatile u8 *inputPendingPtr);
-
     BOOL TRKTargetStopped(void);
+    BOOL OsTargetStopped(u32 processId, u32 threadId);
 
     void TRKTargetSetStopped(BOOL stop_state);
 
     DSError TRKTargetStop(void);
+    DSError OsTargetStop(u8 options, u32 processId, u32 threadId);
 
 #if 0 // ONLY AVAILABLE IN V0.1 OF THE TRK TO THE WII / NDEV
     u8 TRKTargetCPUMinorType(void);
@@ -141,31 +179,54 @@ __extern_c
 
     void *TRKTargetTranslate(u32 *address);
 
+    DSError OsTargetValidStep(u32 processId, u32 threadId);
+
     ASM_PREFIX void TRK_InterruptHandler(/*ui16 exceptionNumber*/);
 
-    DSError TargetAccessInstruction(InstructionType *readData,
-                                void *virtualAddress,
-                                size_t maxSize,
-                                MemoryAccessOptions accessOptions,
-                                BOOL read);
-
-    DSIOResult TargetWriteFile(u32 handle, u8 *data, size_t *length);
-    DSIOResult TargetReadFile(u32 handle, u8 *data, size_t *length);
-
-    DSIOResult TargetOpenFile(DSFileOpenModes modes, u8 *name,
-            u32 *handle, u32 *timestamp);
-
-    DSIOResult TargetCloseFile(u32 handle, u32 timestamp);
-    DSIOResult TargetPositionFile(DSFilePositionModes mode, u32 handle, u32 offset);
-
-    DSError TargetNotifyFileInput(u32 handle);
-
-    DSError TargetBlockFileIo(BOOL block);
-
-    DSError TargetConnect();
-    DSError TargetDisconnect();
+#if TRK_TRANSPORT_INT_DRIVEN
+    void TRKTargetSetInputPendingPtr(volatile u8 *inputPendingPtr);
+#endif
 
 __end_extern_c
+
+/*
+** Define aliases for the functions which have both OS and non-OS
+** variants.  Each alias references the variant which is appropriate
+** for the current protocol level.
+*/
+#if DS_PROTOCOL < DS_PROTOCOL_RTOS
+
+    #define XTargetAccessMemory       TRKTargetAccessMemory
+    #define XTargetAccessDefault      TRKTargetAccessDefault
+    #define XTargetAccessFP           TRKTargetAccessFP
+    #define XTargetAccessExtended1    TRKTargetAccessExtended1
+    #define XTargetAccessExtended2    TRKTargetAccessExtended2
+    #define XTargetContinue           TRKTargetContinue
+    #define XTargetSingleStep         TRKTargetSingleStep
+    #define XTargetStepOutOfRange     TRKTargetStepOutOfRange
+    #define XTargetGetPC              TRKTargetGetPC
+    #define XTargetStopped            TRKTargetStopped
+    #define XTargetStop               TRKTargetStop
+    #define XTargetAddStopInfo        TRKTargetAddStopInfo
+    #define XTargetAddExceptionInfo   TRKTargetAddExceptionInfo
+
+#else /* #if DS_PROTOCOL < DS_PROTOCOL_RTOS */
+
+    #define XTargetAccessMemory       OsTargetAccessMemory
+    #define XTargetAccessDefault      OsTargetAccessDefault
+    #define XTargetAccessFP           OsTargetAccessFP
+    #define XTargetAccessExtended1    OsTargetAccessExtended1
+    #define XTargetAccessExtended2    OsTargetAccessExtended2
+    #define XTargetContinue           OsTargetContinue
+    #define XTargetSingleStep         OsTargetSingleStep
+    #define XTargetStepOutOfRange     OsTargetStepOutOfRange
+    #define XTargetGetPC              OsTargetGetPC
+    #define XTargetStopped            OsTargetStopped
+    #define XTargetStop               OsTargetStop
+    #define XTargetAddStopInfo        OsTargetAddStopInfo
+    #define XTargetAddExceptionInfo   OsTargetAddExceptionInfo
+
+#endif /* #if DS_PROTOCOL < DS_PROTOCOL_RTOS */
 
 
 #endif /* __TARGIMPL_H__ */

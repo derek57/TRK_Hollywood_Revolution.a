@@ -36,7 +36,7 @@ HISTORY
 //
 //    *****************  Version 5  *****************
 //    User: Smoore       Date: 6/25/98    Time: 2:35p
-//    Updated in $/Embedded/MetroTRK/Portable
+//    Updated in $/Embedded/MetroTRK/Portable\t
 //    Merging in latest changes from VR TRK:
 //       - Added support for FlushCache and Stop commands.
 //       - Added support for interrupt-driven I/O.
@@ -156,6 +156,70 @@ DispatchEntry gDispatchTable[] =
     {    &TRKDoUnsupported        },                /* 0x1D expansion: control command */
     {    &TRKDoUnsupported        },                /* 0x1E expansion: control command */
     {    &TRKDoUnsupported        },                /* 0x1F expansion: control command */
+
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+
+    {    &TRKDoUnsupported        },                /* 0x20 reserved */
+    {    &TRKDoUnsupported        },                /* 0x21 reserved */
+    {    &TRKDoUnsupported        },                /* 0x22 reserved */
+    {    &TRKDoUnsupported        },                /* 0x23 reserved */
+    {    &TRKDoUnsupported        },                /* 0x24 reserved */
+    {    &TRKDoUnsupported        },                /* 0x25 reserved */
+    {    &TRKDoUnsupported        },                /* 0x26 reserved */
+    {    &TRKDoUnsupported        },                /* 0x27 reserved */
+
+    {    &TRKDoUnsupported        },                /* 0x28 reserved */
+    {    &TRKDoUnsupported        },                /* 0x29 reserved */
+    {    &TRKDoUnsupported        },                /* 0x2A reserved */
+    {    &TRKDoUnsupported        },                /* 0x2B reserved */
+    {    &TRKDoUnsupported        },                /* 0x2C reserved */
+    {    &TRKDoUnsupported        },                /* 0x2D reserved */
+    {    &TRKDoUnsupported        },                /* 0x2E reserved */
+    {    &TRKDoUnsupported        },                /* 0x2F reserved */
+
+    {    &TRKDoUnsupported        },                /* 0x30 reserved */
+    {    &TRKDoUnsupported        },                /* 0x31 reserved */
+    {    &TRKDoUnsupported        },                /* 0x32 reserved */
+    {    &TRKDoUnsupported        },                /* 0x33 reserved */
+    {    &TRKDoUnsupported        },                /* 0x34 reserved */
+    {    &TRKDoUnsupported        },                /* 0x35 reserved */
+    {    &TRKDoUnsupported        },                /* 0x36 reserved */
+    {    &TRKDoUnsupported        },                /* 0x37 reserved */
+
+    {    &TRKDoUnsupported        },                /* 0x38 reserved */
+    {    &TRKDoUnsupported        },                /* 0x39 reserved */
+    {    &TRKDoUnsupported        },                /* 0x3A reserved */
+    {    &TRKDoUnsupported        },                /* 0x3B reserved */
+    {    &TRKDoUnsupported        },                /* 0x3C reserved */
+    {    &TRKDoUnsupported        },                /* 0x3D reserved */
+    {    &TRKDoUnsupported        },                /* 0x3E reserved */
+    {    &TRKDoUnsupported        },                /* 0x3F reserved */
+
+    /*
+    ** The following commands may or may not be supported by a
+    ** particular OS implementation.  If they are supported, use
+    ** OverrideDispatch() to set the appropriate handler functions.
+    */
+
+    {    &TRKDoUnsupported        },                /* 0x40 OSCreateItem */
+    {    &TRKDoUnsupported        },                /* 0x41 OSDeleteItem */
+    {    &TRKDoUnsupported        },                /* 0x42 OSReadInfo */
+    {    &TRKDoUnsupported        },                /* 0x43 OSWriteInfo */
+    {    &TRKDoUnsupported        },                /* 0x44 reserved */
+    {    &TRKDoUnsupported        },                /* 0x45 reserved */
+    {    &TRKDoUnsupported        },                /* 0x46 reserved */
+    {    &TRKDoUnsupported        },                /* 0x47 reserved */
+
+    {    &TRKDoUnsupported        },                /* 0x48 OSWriteFile */
+    {    &TRKDoUnsupported        },                /* 0x49 OSReadFile */
+    {    &TRKDoUnsupported        },                /* 0x4A OSOpenFile */
+    {    &TRKDoUnsupported        },                /* 0x4B OSCloseFile */
+    {    &TRKDoUnsupported        },                /* 0x4C OSPositionFile */
+    {    &TRKDoUnsupported        },                /* 0x4D reserved */
+    {    &TRKDoUnsupported        },                /* 0x4E reserved */
+    {    &TRKDoUnsupported        },                /* 0x4F reserved */
+
+#endif /* #if DS_PROTOCOL == DS_PROTOCOL_RTOS */
 
     {    (DispatchFunctionPtr) 0  }                 /* sentinel */
 };
@@ -300,7 +364,7 @@ DSError TRK_DispatchMessage(MessageBuffer *buffer)
         // Wii / NDEV as it wasn't included in the official
         // source code of CodeWarriorTRK / MetroTRK / AppTRK.
 
-        case kDSOption:
+        case kDSCheckTargetState:
             err = TRKDoSetOption(buffer);
 
         default:

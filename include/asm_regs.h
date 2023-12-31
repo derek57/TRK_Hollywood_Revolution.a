@@ -42,15 +42,30 @@
 #define __ASM_REGS_H__
 
 
-#ifndef TRK_TRANSPORT_INT_DRIVEN
-    #define TRK_TRANSPORT_INT_DRIVEN     (1)
-#endif
-
-#define TRK_TRANSPORT_INT_KEY        0x500
-
-#define SPR_XER                      1
+// For the Wii / NDEV, this was ACTIVATED
+#define TRK_TRANSPORT_INT_DRIVEN     (1)
 
 #define COND_EQ                      2
+
+/*
+** For an interrupt-driven transport, define the interrupt mask and
+** interrupt key so that the TRK can identify the interrupt which
+** corresponds the communication transport.  Using the interrupt
+** ID or cause register, it is the interrupt for which:
+** id == TRK_TRANSPORT_INT_KEY
+**
+** For PPC, check if the exception id == 0x0500 (External interrupt).
+**
+** For Maximer MPC7400 board, the UART interrupt uses
+** external interrupt line.
+*/
+#define TRK_TRANSPORT_INT_KEY        0x00000500
+
+//###########################################################################
+// REGISTERS...
+//###########################################################################
+
+#define SPR_XER                      1
 
 #define SPR_LR                       8
 #define SPR_CTR                      9
@@ -64,10 +79,10 @@
 #define SPR_SRR0                     26
 #define SPR_SRR1                     27
 
-#define SPR_CSRR0                    58
-#define SPR_CSRR1                    59
-
 #if 0 // ONLY AVAILABLE IN V0.1 OF THE TRK TO THE WII / NDEV
+
+    #define SPR_CSRR0                    58
+    #define SPR_CSRR1                    59
 
     /*
     ** MPC7400 additional SPRs
@@ -117,6 +132,7 @@
 #define SPR_IBAT6L                   565
 #define SPR_IBAT7U                   566
 #define SPR_IBAT7L                   567
+
 #define SPR_DBAT4U                   568
 #define SPR_DBAT4L                   569
 #define SPR_DBAT5U                   570
@@ -126,16 +142,17 @@
 #define SPR_DBAT7U                   574
 #define SPR_DBAT7L                   575
 
-#define SPR_DCNV0                    912
-#define SPR_DCNV1                    913
-#define SPR_DCNV2                    914
-#define SPR_DCNV3                    915
-#define SPR_DCTV0                    916
-#define SPR_DCTV1                    917
-#define SPR_DCTV2                    918
-#define SPR_DCTV3                    919
-#define SPR_DCVL                     920
-#define SPR_ICVL                     921
+#define SPR_GQR0                     912
+#define SPR_GQR1                     913
+#define SPR_GQR2                     914
+#define SPR_GQR3                     915
+#define SPR_GQR4                     916
+#define SPR_GQR5                     917
+#define SPR_GQR6                     918
+#define SPR_GQR7                     919
+
+#define SPR_HID2                     920
+#define SPR_WPAR                     921
 #define SPR_DMAU                     922
 #define SPR_DMAL                     923
 
@@ -156,8 +173,9 @@
 #define SPR_UMMCR1                   940
 #define SPR_UPMC3                    941
 #define SPR_UPMC4                    942
+#define SPR_USDA                     943 /* Decoded, but not implemented */
 
-    #if 0 // ONLY AVAILABLE IN V0.1 OF THE TRK TO THE WII / NDEV
+#if 0 // ONLY AVAILABLE IN V0.1 OF THE TRK TO THE WII / NDEV
 
     /*
     ** MPC7400 additional SPRs
@@ -174,13 +192,13 @@
 #define SPR_MMCR1                    956
 #define SPR_PMC3                     957
 #define SPR_PMC4                     958
+#define SPR_SDA                      959 /* Decoded, but not implemented */
 
 #if 0 // ONLY AVAILABLE IN V0.1 OF THE TRK TO THE WII / NDEV
 
     /*
     ** MPC7400 additional SPRs
     */
-    #define SPR_SDA                      959 /* Decoded, but not implemented */
     #define SPR_DMISS                    976
     #define SPR_DCMP                     977
     #define SPR_HASH1                    978
@@ -194,8 +212,8 @@
 #define SPR_HID0                     1008
 #define SPR_HID1                     1009
 #define SPR_IABR                     1010
-#define SPR_HID2                     1011
-
+#define SPR_HID4                     1011
+#define SPR_TDCL                     1012
 #define SPR_DABR                     1013
 
 #if 0 // ONLY AVAILABLE IN V0.1 OF THE TRK TO THE WII / NDEV
@@ -209,23 +227,15 @@
 #endif
 
 #define SPR_L2CR                     1017
-
+#define SPR_TDCH                     1018
 #define SPR_ICTC                     1019
 
-#if 0 // ONLY AVAILABLE IN V0.1 OF THE TRK TO THE WII / NDEV
-
-    /*
-    ** MPC7400 additional SPRs
-    */
-    #define SPR_THRM1                    1020
-    #define SPR_THRM2                    1021
-    #define SPR_THRM3                    1022
-
-#else
-
-    #define SPR_FPECR                    1022
-
-#endif
+/*
+** MPC7400 additional SPRs
+*/
+#define SPR_THRM1                    1020
+#define SPR_THRM2                    1021
+#define SPR_THRM3                    1022
 
 
 #if 0 // ONLY AVAILABLE IN V0.1 OF THE TRK TO THE WII / NDEV
@@ -236,10 +246,6 @@
     #define SPR_PIR                      1023
 
 #endif
-
-#define SPR_GQR0                     SPR_DCNV0
-
-#define PPC_CACHE_ALIGNMENT          32
 
 
 #endif // __ASM_REGS_H__

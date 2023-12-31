@@ -77,7 +77,14 @@ COPYRIGHT
 /*
  * Extended registers block 1
  */
-#define MWDEBUGGER_PLUGIN (1)
+
+//
+// NOTE: Absolutely NO source codes were seen where definition
+//       "MWDEBUGGER_PLUGIN" was enabled AT ALL during the decompilation of
+//       library "TRK_Hollywood_Revolution.a" for the Wii / NDEV...
+//
+
+//#define MWDEBUGGER_PLUGIN (1)
 
 
 #ifdef SPRG0
@@ -96,12 +103,12 @@ COPYRIGHT
     #undef SPRG3
 #endif
 
-// Stuff in this struct right here needs to be fixed up...
+// Stuff in this struct right here needs to be sorted...
 //
-// The offsets of registers being used for the Wii / NDEV
-// are basically correct but do not match with what was
-// seen in the official source code of protocol version
-// v1.10 (kernel v3.37 of the TRK...
+// The offsets of registers in this struct marked as "USED"
+// for the Wii / NDEV are basically correct but do not
+// match with what was seen in the official source code of
+// protocol version v1.10 (Kernel v3.37 of the TRK)...
 typedef struct Extended1_PPC_6xx_7xx
 {
     Extended1Type SR[16]; // 0x1E4 (USED)
@@ -210,7 +217,7 @@ typedef struct Extended1_PPC_6xx_7xx
     Extended1Type DBAT7L;
 
     Extended1Type exceptionID;
-    Extended1Type DCNV0;  // 0x2FC (USED)
+    Extended1Type GQR;    // 0x2FC (USED)
 
 #endif // PROCESSOR_7455_EXTENSION
 
@@ -231,6 +238,11 @@ typedef struct Extended1_PPC_6xx_7xx
 
 #endif
 
+    //
+    // Added to get around the compiler warning about padding
+    //
+    // The MetroWerks C-Compiler would still add 4 bytes of padding here
+    //
     u8            pad[4];
 } Extended1_PPC_6xx_7xx;
 
@@ -269,13 +281,9 @@ typedef struct Extended1_PPC_6xx_7xx
 
     typedef struct Extended2_PPC_6xx_7xx
     {
-        #if 0 // NOT IMPLEMENTED ON THE WII / NDEV
-            u128 VR[32];
-            DefaultType VSCR;           // PPC7400 only (Vector Status and Control Register, NOT an spr)
-            DefaultType VRSAVE;         // PPC7400 only (PPC750 with AltiVec technology)
-        #else
-            u128 pad[16];
-        #endif
+        u128 VR[32];
+        DefaultType VSCR;           // PPC7400 only (Vector Status and Control Register, NOT an spr)
+        DefaultType VRSAVE;         // PPC7400 only (PPC750 with AltiVec technology)
     } Extended2_PPC_6xx_7xx;
 
 #endif
@@ -288,8 +296,12 @@ typedef struct ProcessorState_PPC_6xx_7xx
 {
     Default_PPC                        Default;   // Default register block
 
-    // ADDED for the Wii / NDEV
-    u8                                 pad[4];
+    //
+    // Added to get around the compiler warning about padding
+    //
+    // The MetroWerks C-Compiler would still add 4 bytes of padding here
+    //
+    u8                                 pad1[4];
 
     Float_PPC                          Float;
     Extended1_PPC_6xx_7xx              Extended1; // Extended 1 register block
@@ -299,6 +311,17 @@ typedef struct ProcessorState_PPC_6xx_7xx
     #if __PPC_ALTIVEC__
         Extended2_PPC_6xx_7xx          Extended2; // Extended 2 register block
     #endif /* #if __PPC_ALTIVEC__ */
+
+    //
+    // NOTE: It is unclear what this "padding" used to be but it seems as if
+    // it is just the "Extended2" block variable, as it's size is just the
+    // exact same size of the padding right here, which means that they either
+    // had the "if" definition of "__PPC_ALTIVEC__" right above enabled or
+    // completely removed during porting MetroTRK to the Wii / NDEV...
+    //
+    // Either way, variable "Extended2" was NEVER USED...
+    //
+    u8                                 pad2[256];
 
 #else
 
@@ -319,6 +342,7 @@ typedef struct ProcessorState_PPC_6xx_7xx
     #define DS_EXTENDED2_MAX_REGISTER  DS_EXTENDED2_MAX_REGISTER_6xx_7xx
     #define FPR_START                  FPR_START_6xx_7xx
 
+    typedef ProcessorState_PPC_6xx_7xx ProcessorState_PPC;
     typedef Extended1_PPC_6xx_7xx      Extended1_PPC;
 
     #if __PPC_ALTIVEC__
@@ -326,8 +350,6 @@ typedef struct ProcessorState_PPC_6xx_7xx
     #endif /* #if __PPC_ALTIVEC__ */
 
 #endif
-
-typedef ProcessorState_PPC_6xx_7xx     ProcessorState_PPC;
 
 __extern_c
 

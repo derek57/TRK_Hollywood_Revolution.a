@@ -42,7 +42,11 @@ __extern_c
 
     DSError TRK_SuppAccessFile(DSFileHandle file_handle, u8 *data, s32 *count,
                            DSIOResult *io_result, BOOL need_reply,
-                           BOOL read);
+                           BOOL read
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+                           , u32 process_id, u32 thread_id
+#endif
+                           );
 
     DSError TRK_RequestSend(MessageBuffer *buffer, MessageBufferId *replyID
 #if 0 // ONLY AVAILABLE IN V0.1 OF THE TRK TO THE WII / NDEV

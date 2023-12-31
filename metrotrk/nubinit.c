@@ -315,7 +315,12 @@ void TRK_NubWelcome(void)
     */
 
     count = (size_t)TRK_strlen(str);
-    TRK_SuppAccessFile(kDSStdout, (u8 *)str, &count, &io_result, FALSE, FALSE);
+
+    TRK_SuppAccessFile(kDSStdout, (u8 *)str, &count, &io_result, FALSE, FALSE
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+        , TRK_PROCESS_ID, TRK_THREAD_ID
+#endif
+        );
 
 #endif /* #ifndef SUPPRESS_WELCOME_MESSAGE */
 

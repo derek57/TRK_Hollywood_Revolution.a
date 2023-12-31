@@ -184,24 +184,24 @@ TRKSaveExtended1Block:
 
     mfspr     r28, SPR_DBAT7U      // Data BAT 7 Upper Register
     mfspr     r29, SPR_DBAT7L      // Data BAT 7 Lower Register
-    mfspr     r30, SPR_DCVL        // Data Cache Victim Limit
+    mfspr     r30, SPR_HID2        // Hardware Implementation Register 2
 
                                    // Same values:
-    mfspr     r31, SPR_HID2        // Debug Data Register
+    mfspr     r31, SPR_HID4        // Hardware Implementation Register 4
                                    // L1 Instruction Cache Control and Status Register 1
 
     stmw      r25, 0x2DC(r2)
 
-    mfspr     r20, SPR_DCNV0       // Data Cache Normal Victim 0
-    mfspr     r21, SPR_DCNV1       // Data Cache Normal Victim 1
-    mfspr     r22, SPR_DCNV2       // Data Cache Normal Victim 2
-    mfspr     r23, SPR_DCNV3       // Data Cache Normal Victim 3
-    mfspr     r24, SPR_DCTV0       // Data Cache Transient Victim 0
-    mfspr     r25, SPR_DCTV1       // Data Cache Transient Victim 1
-    mfspr     r26, SPR_DCTV2       // Data Cache Transient Victim 2
-    mfspr     r27, SPR_DCTV3       // Data Cache Transient Victim 3
-    mfspr     r28, SPR_DCVL        // Data Cache Victim Limit
-    mfspr     r29, SPR_ICVL        // Instruction Cache Victim Limit
+    mfspr     r20, SPR_GQR0        // Quantization Register 0
+    mfspr     r21, SPR_GQR1        // Quantization Register 1
+    mfspr     r22, SPR_GQR2        // Quantization Register 2
+    mfspr     r23, SPR_GQR3        // Quantization Register 3
+    mfspr     r24, SPR_GQR4        // Quantization Register 4
+    mfspr     r25, SPR_GQR5        // Quantization Register 5
+    mfspr     r26, SPR_GQR6        // Quantization Register 6
+    mfspr     r27, SPR_GQR7        // Quantization Register 7
+    mfspr     r28, SPR_HID2        // Hardware Implementation Register 2
+    mfspr     r29, SPR_WPAR        // Write Gather Pipe Register
     mfspr     r30, SPR_DMAU        // Special Purpose Register DMA Upper
     mfspr     r31, SPR_DMAL        // Special Purpose Register DMA Lower
     stmw      r20, 0x2FC(r2)
@@ -234,15 +234,15 @@ TRKRestoreExtended1Block:
 no_tbr_restore:
 
     lmw       r20, 0x2FC(r2)
-    mtspr     SPR_DCNV0, r20
-    mtspr     SPR_DCNV1, r21
-    mtspr     SPR_DCNV2, r22
-    mtspr     SPR_DCNV3, r23
-    mtspr     SPR_DCTV0, r24
-    mtspr     SPR_DCTV1, r25
-    mtspr     SPR_DCTV2, r26
-    mtspr     SPR_DCTV3, r27
-    mtspr     SPR_DCVL, r28
+    mtspr     SPR_GQR0, r20
+    mtspr     SPR_GQR1, r21
+    mtspr     SPR_GQR2, r22
+    mtspr     SPR_GQR3, r23
+    mtspr     SPR_GQR4, r24
+    mtspr     SPR_GQR5, r25
+    mtspr     SPR_GQR6, r26
+    mtspr     SPR_GQR7, r27
+    mtspr     SPR_HID2, r28
     mtspr     SPR_DMAU, r30
     mtspr     SPR_DMAL, r31
     b         __603e_specific_restore

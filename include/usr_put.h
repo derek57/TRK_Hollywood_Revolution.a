@@ -27,6 +27,14 @@ COPYRIGHT
 #include "trktypes.h"
 #include "dserror.h"
 #include "trk_prefix.h"
+#include "target.h"
+#include "msgcmd.h"
+
+
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+    #define TRK_PROCESS_ID      getpid()
+    #define TRK_THREAD_ID       0
+#endif
 
 
 __extern_c
@@ -52,10 +60,6 @@ __extern_c
         #define DEBUG_ASSERT    1
     #endif
 
-    #ifndef DEBUG_MSGCMD
-        #define DEBUG_MSGCMD    1
-    #endif
-
 #else
 
     #define __putchar(c)    ((void)0)
@@ -69,10 +73,6 @@ __extern_c
 
     #ifndef DEBUG_ASSERT
         #define DEBUG_ASSERT    0
-    #endif
-
-    #ifndef DEBUG_MSGCMD
-        #define DEBUG_MSGCMD    0
     #endif
 
 #endif

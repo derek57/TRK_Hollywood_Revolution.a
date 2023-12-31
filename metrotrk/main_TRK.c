@@ -42,6 +42,7 @@ STATUS
 #include "nubinit.h"
 #include "targimpl_ppc.h"
 #include "mainloop.h"
+#include "usr_put.h"
 
 
 #define DEBUG_MAIN  0

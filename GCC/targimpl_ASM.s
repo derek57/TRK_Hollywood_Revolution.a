@@ -223,7 +223,6 @@ TRK_InterruptHandler:
     cmpwi     r3, TRK_TRANSPORT_INT_KEY        /* compare with the key */
     bne       NonTransportInterrupt            /* if not equal, do standard */
                                                /* interrupt processing */
-
     addis     r2, r0, gTRKCPUState@h           /* save ra before calling handler */
     ori       r2, r2, gTRKCPUState@l
     mflr      r3
@@ -242,7 +241,6 @@ TRK_InterruptHandler:
     lbz       r2, 0(r2)                        /* get input pending value */
     cmpwi     r2, 0
     beq       TransportReturn                  /* if no input, return from int */
-
 
     addis     r2, r0, gTRKExceptionStatus@h    /* base pointer to reentrance flag */
     ori       r2, r2, gTRKExceptionStatus@l

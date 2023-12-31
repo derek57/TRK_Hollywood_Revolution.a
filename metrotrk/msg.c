@@ -75,6 +75,19 @@ STATUS
 #include "msg.h"
 #include "msgxtrct.h"
 
+#ifndef TRK_PACKET_IO
+    #include "usr_put.h"
+    #include "serframe.h"
+
+
+    #define DEBUG_PACKET_OUT    0
+
+
+    #ifndef FCSBITSIZE
+        #error "Framing FCS not defined"
+    #endif
+#endif
+
 
 static u16 gPacketSeq = 0;
 
@@ -95,9 +108,7 @@ DSError TRKMessageAdd(MessageBuffer *buffer, u32 data)
 
     return err;
 }
-#endif
 
-#if 0 // ONLY AVAILABLE IN V0.1 OF THE TRK TO THE WII / NDEV
 /****************************************************************************/
 /*
  *    TRKMessageGet
@@ -127,7 +138,9 @@ DSError TRKMessageGet(MessageBuffer *buffer, u32 *data)
 /****************************************************************************/
 DSError TRK_MessageSend(MessageBuffer *buffer)
 {
-    s32 err;
+#ifdef TRK_PACKET_IO
+
+    DSError err;
 
 #if 1 // ONLY AVAILABLE IN V0.4 OF THE TRK TO THE WII / NDEV
     u16 currentSequence = gPacketSeq;
@@ -145,7 +158,7 @@ DSError TRK_MessageSend(MessageBuffer *buffer)
     //
     // For Dolphin & EXI2, write complete packets without framing.
     //
-    err = TRK_WriteUARTN((s8 *)&buffer->fData, buffer->fLength);
+    err = (DSError)TRK_WriteUARTN((s8 *)&buffer->fData, buffer->fLength);
 
 #if 1 // ONLY AVAILABLE IN V0.4 OF THE TRK TO THE WII / NDEV
     if (err)
@@ -153,4 +166,118 @@ DSError TRK_MessageSend(MessageBuffer *buffer)
 #endif
 
     return kNoError;
+
+#else /* #ifdef TRK_PACKET_IO */
+
+    DSError            err;
+    FCSType            fcs;
+    FCSType            acc;
+    s32                i;
+
+    /*
+     *    Walk through buffer, computing frame check sequence
+     *    (checksum).
+     */
+    fcs = PPPINITFCS;
+
+    for (i = 0; i < buffer->fLength; i++)
+    {
+        fcs = (FCSType)PPPFCS(fcs, buffer->fData[i]);
+
+#if DEBUG_PACKET_OUT
+        __puts("[");
+        __puthex2(buffer->fData[i]);
+        __puts("]");
+    }
+    __puts("\r\n");
+#else
+    }
+#endif
+
+    fcs = (FCSType)(fcs ^ PPPCOMPFCS);                            /* finish by complementing */
+
+    __puts("MessageSend. FCS = ");
+    __puthex8(fcs);
+    __puts("\r\n");
+
+    /*
+     *    Send bytes out the UART:
+     *    [0x7E (frame flag)] [...data...] [FCS:8 or FCS:16 or FCS:32] [0x7E (frame flag)]
+     */
+
+    /* FLAG */
+
+    err = (DSError)WriteUART1(PPP_FLAG);
+
+    /* DATA */
+
+    if (err == kNoError)
+    {
+        for (i = 0; i < buffer->fLength; i++)
+        {
+            u8 c = buffer->fData[i];
+
+            if ((c == PPP_FLAG) || (c == PPP_ESCAPE))
+            {
+                /* escape if necessary */
+                err = (DSError)WriteUART1(PPP_ESCAPE);
+                c ^= PPP_TRANS;
+
+                if (err != kNoError)
+                    break;
+            }
+
+            err = (DSError)WriteUART1(c);
+
+            if (err != kNoError)
+                break;
+        } /* for */
+    }
+
+    /* FCS */
+
+    /*
+     *    FCS always goes out in little endian (LSB, ... , MSB) order
+     */
+
+    if (err == kNoError)
+    {
+        acc = fcs;                                    /* accumulator */
+
+        for (i = 0; i < sizeof(FCSType); i++)
+        {
+            /* 2- or 4-bytes */
+            u8 c = (FCSType)(acc & 0xFF);
+
+#if FCSBITSIZE != FCS8
+            acc >>= 8;
+#endif
+
+            if ((c == PPP_FLAG) || (c == PPP_ESCAPE))
+            {
+                /* escape if necessary */
+                err = (DSError)WriteUART1(PPP_ESCAPE);
+                c ^= PPP_TRANS;
+
+                if (err != kNoError)
+                    break;
+            }
+
+            err = (DSError)WriteUART1(c);
+
+            if (err != kNoError)
+                break;
+        } /* for */
+    }
+
+    /* FLAG */
+
+    if (err == kNoError)
+    {
+        err = (DSError)WriteUART1(PPP_FLAG);
+    }
+
+    return err;
+
+#endif /* #ifdef TRK_PACKET_IO */
 }

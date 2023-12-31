@@ -170,13 +170,7 @@ enum
     #define DB_RAM_BUFFERS                  0
 #endif
 
-#if TRK_MSG_SEQUENCE_IDS
-    #define TRK_MSG_SEQUENCE_ID_BUFFERS     1
-#else
-    #define TRK_MSG_SEQUENCE_ID_BUFFERS     0
-#endif
-
-#define kMessageBufferCount                 (3 + DB_RAM_BUFFERS + TRK_MSG_SEQUENCE_ID_BUFFERS + TRK_EXTRA_BUFFER_COUNT)
+#define kMessageBufferCount                 (3 + DB_RAM_BUFFERS + TRK_EXTRA_BUFFER_COUNT)
 
 /*
  *    struct MessageBuffer

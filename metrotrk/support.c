@@ -134,7 +134,11 @@ typedef struct
 /****************************************************************************/
 DSError TRK_SuppAccessFile(DSFileHandle file_handle, u8 *data, s32 *count,
                         DSIOResult *io_result, BOOL need_reply,
-                        BOOL read)
+                        BOOL read
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+                        , u32 process_id, u32 thread_id
+#endif
+                        )
 {
     DSError         err;
     MessageBufferId replyID;
@@ -195,6 +199,13 @@ DSError TRK_SuppAccessFile(DSFileHandle file_handle, u8 *data, s32 *count,
 
         err = MessageAddBlock_ui8(buffer, (const u8 *)&tmpbuf, TRK_MSG_HEADER_LENGTH);
 
+#if DS_PROTOCOL == DS_PROTOCOL_RTOS
+        if (err == kNoError)
+            err = MessageAdd_ui32(buffer, process_id);
+
+        if (err == kNoError)
+            err = MessageAdd_ui32(buffer, thread_id);
+#endif
         /*
         ** If writing, copy the write data to the message.
         */
@@ -493,7 +504,7 @@ DSError TRK_RequestSend(MessageBuffer *buffer, MessageBufferId *replyID
                 // file due to the use of an "#if..." condition check
                 if ((err == kNoError) && !bad_reply)
                     msg_error = replyBuffer->fData[8];
-                
+
 #if DEBUG_SUPP_REPLY_ENABLED
                 if (msg_error)
                     OSReport("RequestSend: Non-ACK or ACK-error received.\n");
@@ -620,7 +631,7 @@ DSError HandleCloseFileSupportRequest(DSFileHandle handle, DSIOResult *io_result
     MessageBuffer   *replyBuffer;
     MessageBuffer   *buffer;
     msgbuf_t        tmpbuf;
-    
+
     // Reset Buffer
     TRK_memset(&tmpbuf, kZero, TRK_MSG_HEADER_LENGTH);
 

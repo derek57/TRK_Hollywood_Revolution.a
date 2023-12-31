@@ -99,10 +99,6 @@ COPYRIGHT
 #endif
 */
 
-#ifndef TRK_MSG_SEQUENCE_IDS
-    #define TRK_MSG_SEQUENCE_IDS         (0)
-#endif
-
 /*
 ** A few defines are needed by assembly code, but the assembler
 ** cannot handle some of the C-specific things included in this

@@ -304,34 +304,6 @@ __extern_c
     s32 a(const s8 *string);
     s32 b(const s8 *string);
     s32 c(const s8 *string);
-    s32 a(const s8 *string);
-    s32 b(const s8 *string);
-    s32 c(const s8 *string);
-    s32 a(const s8 *string);
-    s32 b(const s8 *string);
-    s32 c(const s8 *string);
-    s32 a(const s8 *string);
-    s32 b(const s8 *string);
-    s32 c(const s8 *string);
-    s32 a(const s8 *string);
-    s32 b(const s8 *string);
-    s32 c(const s8 *string);
-    s32 a(const s8 *string);
-    s32 b(const s8 *string);
-    s32 c(const s8 *string);
-    s32 a(const s8 *string);
-    s32 b(const s8 *string);
-    s32 c(const s8 *string);
-    s32 a(const s8 *string);
-    s32 b(const s8 *string);
-    s32 c(const s8 *string);
-
-    s32 a(const s8 *string);
-    s32 b(const s8 *string);
-    s32 c(const s8 *string);
-    s32 a(const s8 *string);
-    s32 b(const s8 *string);
-    s32 c(const s8 *string);
 
 __end_extern_c
 
