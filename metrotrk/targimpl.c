@@ -2167,7 +2167,7 @@ DSError TRKTargetInterrupt(NubEvent *event)
 #define FPU_CONTEXT_ADDR        0xD8
 #define ROOT_THREAD_ADDR        0xDC    // First thread we were running in
 #define PREVIOUS_THREAD_ADDR    0xE0    // Previous thread we were running in
-#define CURRENT_THREAD_ADDR     0xE4    // Thread we're curently running in
+#define CURRENT_THREAD_ADDR     0xE4    // Thread we're currently running in
 
 
 DSError TRKTargetAddStopInfo(MessageBuffer *buffer)
@@ -3531,20 +3531,14 @@ static void GetThreadInfo(u32 *result, u32 *a2)
     if (!(((u32)thread->object.node.next != 0xFFFFFFFF) &&
         ((u32)thread->object.node.next) &&
         ((u32)thread->object.node.next != BOOTINFO)))
-    {
-        OSReport("return\n");
         return;
-    }
 
     v3 = 0;
 
     while ((u32)thread->object.node.next != 0)
     {
         if (thread == _thr_executing)
-        {
-            OSReport("got data %08x\n", thread);
             *a2 = v3;
-        }
 
         ++v3;
         thread = (lwp_cntrl *)ConvertAddress((u32)(thread->object.node.next));
@@ -3552,10 +3546,7 @@ static void GetThreadInfo(u32 *result, u32 *a2)
         if (((u32)thread->object.node.next == 0xFFFFFFFF) ||
             (!(u32)thread->object.node.next) ||
             ((u32)thread->object.node.next == BOOTINFO))
-        {
-            OSReport("break\n");
             break;
-        }
     }
 
     *result = v3;
